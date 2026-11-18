@@ -60,6 +60,8 @@ env:
 
 jobs:
   plan:
+    # Upstream owns these npm packages. Fork main is released through Paseo's Git source.
+    if: github.repository == 'gpambrozio/paseo-plugins'
     name: Decide what to publish
     runs-on: ubuntu-latest
     permissions:
