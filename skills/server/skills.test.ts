@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { PluginHandlerContext } from "@getpaseo/plugin/server";
@@ -273,7 +273,7 @@ describe("defaultSkillRoots", () => {
 
 describe("createReadSkillHandler", () => {
   test("returns the body for a discovered skill", async () => {
-    const cwd = path.join(root, "work");
+    const cwd = path.join(await realpath(root), "work");
     await writeSkill(path.join(cwd, ".claude", "skills"), "catchup", "Summarizes changes");
     const context = contextFor({ id: "agent-1", provider: "claude", cwd });
     const listed = await createListSkillsHandler(roots)({ agentId: "agent-1" }, context);
@@ -284,6 +284,30 @@ describe("createReadSkillHandler", () => {
     expect(result.name).toBe("catchup");
     expect(result.description).toBe("Summarizes changes");
     expect(result.path).toBe(path.join(cwd, ".claude", "skills", "catchup", "SKILL.md"));
+    expect(result.resolvedPath).toBe(result.path);
+    expect(result.body).toBe("Body for catchup.\n");
+  });
+
+  test("preserves the discovery path and reports the source of a linked skill", async () => {
+    const fixtureRoot = await realpath(root);
+    const cwd = path.join(fixtureRoot, "work");
+    const discoveredDir = path.join(cwd, ".claude", "skills");
+    const sharedDir = path.join(fixtureRoot, "shared", "skills");
+    await writeSkill(sharedDir, "catchup", "Summarizes changes");
+    await mkdir(discoveredDir, { recursive: true });
+    await symlink(path.join(sharedDir, "catchup"), path.join(discoveredDir, "catchup"), "dir");
+    const context = contextFor({ id: "agent-1", provider: "claude", cwd });
+    const listed = await createListSkillsHandler(roots)({ agentId: "agent-1" }, context);
+    const skill = listed.skills[0]!;
+
+    const result = await createReadSkillHandler(roots)(
+      { agentId: "agent-1", skillId: skill.id },
+      context,
+    );
+
+    expect(result.path).toBe(path.join(discoveredDir, "catchup", "SKILL.md"));
+    expect(result.path).toBe(skill.path);
+    expect(result.resolvedPath).toBe(path.join(sharedDir, "catchup", "SKILL.md"));
     expect(result.body).toBe("Body for catchup.\n");
   });
 

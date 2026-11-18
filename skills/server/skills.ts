@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -148,11 +148,13 @@ export function createReadSkillHandler(roots: SkillRoots = defaultSkillRoots()) 
     if (!skill) {
       throw new Error(`Skill not available: ${input.skillId}`);
     }
-    const raw = await readFile(skill.path, "utf8");
+    const resolvedPath = await realpath(skill.path);
+    const raw = await readFile(resolvedPath, "utf8");
     return {
       name: skill.name,
       description: skill.description,
       path: skill.path,
+      resolvedPath,
       body: parseFrontmatter(raw).body,
     };
   };

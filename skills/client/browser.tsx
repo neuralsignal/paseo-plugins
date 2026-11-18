@@ -283,6 +283,11 @@ function SkillDetail({
               >
                 <Text style={styles.copy}>Copy path</Text>
               </Pressable>
+              {query.data.resolvedPath !== query.data.path ? (
+                <Text style={styles.path} selectable>
+                  Resolved source: {query.data.resolvedPath}
+                </Text>
+              ) : null}
             </>
           ) : null}
           {userInvocable ? (
