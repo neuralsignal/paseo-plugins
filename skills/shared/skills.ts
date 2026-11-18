@@ -61,8 +61,10 @@ export const readSkill = defineRpc({
   output: z.object({
     name: z.string(),
     description: z.string(),
+    source: SkillSourceSchema,
     path: z.string(),
     resolvedPath: z.string(),
+    otherCopies: z.array(z.object({ path: z.string(), source: SkillSourceSchema })),
     body: z.string(),
   }),
 });

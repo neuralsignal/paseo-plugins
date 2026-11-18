@@ -2,7 +2,13 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { parseFrontmatter } from "./frontmatter";
-import { dedupeByName, makeSkillId, type SkillEntry, type SkillSourceKind } from "./skill-entry";
+import {
+  dedupeByName,
+  makeSkillId,
+  type OnShadowedSkill,
+  type SkillEntry,
+  type SkillSourceKind,
+} from "./skill-entry";
 
 export interface SkillDirectoryCandidate {
   dir: string;
@@ -30,6 +36,7 @@ export interface SkillDirectoryCandidate {
  */
 export async function readSkillCandidates(
   candidates: SkillDirectoryCandidate[],
+  onShadowed?: OnShadowedSkill,
 ): Promise<SkillEntry[]> {
   const seen = new Set<string>();
   const unique = candidates.filter((candidate) => {
@@ -50,7 +57,7 @@ export async function readSkillCandidates(
       ),
     ),
   );
-  return dedupeByName(groups.flat()).sort((a, b) => a.name.localeCompare(b.name));
+  return dedupeByName(groups.flat(), onShadowed).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

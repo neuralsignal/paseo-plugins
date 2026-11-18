@@ -110,6 +110,10 @@ function detailStyles(theme: Theme, padding: number) {
     description: { color: theme.colors.foregroundMuted, marginBottom: padding },
     path: { color: theme.colors.foregroundMuted, fontSize: 12, fontFamily: MONO },
     copy: { color: theme.colors.accent, marginTop: 4, marginBottom: padding },
+    source: { color: theme.colors.foreground, fontSize: 13, marginBottom: 4 },
+    otherCopies: { marginBottom: padding },
+    disclosure: { color: theme.colors.accent, paddingVertical: 8 },
+    otherCopy: { marginTop: 4, marginBottom: 6 },
     argsInput: {
       color: theme.colors.foreground,
       borderWidth: 1,
@@ -239,6 +243,7 @@ function SkillDetail({
   const callReadSkill = useRpc(readSkill);
   const toast = useToast();
   const controls = useInvoke(agentId, onInvoked);
+  const [otherCopiesOpen, setOtherCopiesOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ["skill", agentId, skillId],
@@ -267,6 +272,7 @@ function SkillDetail({
           {/* The popover is for running a skill, not locating it; the tab keeps the path. */}
           {frame === "screen" ? (
             <>
+              <Text style={styles.source}>Source · {query.data.source.label}</Text>
               <Text style={styles.path} selectable>
                 {query.data.path}
               </Text>
@@ -287,6 +293,29 @@ function SkillDetail({
                 <Text style={styles.path} selectable>
                   Resolved source: {query.data.resolvedPath}
                 </Text>
+              ) : null}
+              {query.data.otherCopies.length > 0 ? (
+                <View style={styles.otherCopies}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: otherCopiesOpen }}
+                    onPress={() => setOtherCopiesOpen((open) => !open)}
+                  >
+                    <Text style={styles.disclosure}>
+                      {otherCopiesOpen ? "▾" : "▸"} Other copies ({query.data.otherCopies.length})
+                    </Text>
+                  </Pressable>
+                  {otherCopiesOpen
+                    ? query.data.otherCopies.map((copy) => (
+                        <View key={copy.path} style={styles.otherCopy}>
+                          <Text style={styles.source}>{copy.source.label}</Text>
+                          <Text style={styles.path} selectable>
+                            {copy.path}
+                          </Text>
+                        </View>
+                      ))
+                    : null}
+                </View>
               ) : null}
             </>
           ) : null}
@@ -465,6 +494,7 @@ export function SkillBrowser({
     const entry = (query.data?.skills ?? []).find((skill) => skill.id === selected.id);
     return (
       <SkillDetail
+        key={selected.id}
         theme={theme}
         frame={frame}
         padding={padding}

@@ -7,6 +7,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Every version
 as `@gpambrozio/paseo-skills` and tagged here, so a version is something to install and a line to
 read before you move.
 
+## [0.5.0] — 2026-11-18
+
+### Added
+
+- The Skills tab shows the source scope of the selected skill. Expand **Other copies** to see
+  lower-priority locations for the same name. Symlinks to the same file count once.
+
 ## [0.4.0] — 2026-10-01
 
 ### Added
