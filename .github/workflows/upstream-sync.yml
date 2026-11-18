@@ -1,0 +1,33 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report the merge plan without running Claude or opening a pull request
+        type: boolean
+        default: true
+
+concurrency:
+  group: upstream-sync-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: >-
+      github.repository == 'neuralsignal/paseo-plugins' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' || vars.UPSTREAM_SYNC_ENABLED == 'true')
+    uses: neuralsignal/agentic-engineering-kit/.github/workflows/upstream-sync.yml@62514e2423c7edc7eb8fbaf8181ddde7d24f58e9
+    with:
+      upstream_repository: gpambrozio/paseo-plugins
+      required_check: Checks passed
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      app_client_id: ${{ vars.UPSTREAM_SYNC_APP_CLIENT_ID }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      UPSTREAM_SYNC_APP_PRIVATE_KEY: ${{ secrets.UPSTREAM_SYNC_APP_PRIVATE_KEY }}

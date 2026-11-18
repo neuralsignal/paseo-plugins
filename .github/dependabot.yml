@@ -1,5 +1,13 @@
 version: 2
 updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-routine:
+        patterns: ["*"]
+        update-types: [minor, patch]
   # One entry over every plugin folder — there is no workspace root, so each
   # has its own package.json and lockfile.
   #
