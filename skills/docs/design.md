@@ -65,10 +65,9 @@ because the `paseo` object comes from the daemon's bundled client rather than th
 `enabled` flag. Paseo's composer honours it; a directory scan cannot see it. Reading that TOML is
 the cheapest way to close this and is not done yet.
 
-**Shadowed copies are hidden, but Codex does not hide them.** Codex's docs are explicit: "If two
-skills share the same `name`, Codex doesn't merge them; both can appear in skill selectors." This
-panel resolves collisions first-wins and shows one row. Across five scopes that silently drops
-real rows — see "Future seams".
+**Same-named files share a list row.** The plugin selects the first discovered file in its scope
+order. In the full tab, **Other copies** lists the other distinct files under that name. Codex
+can show these files separately in its own skill selector.
 
 **Hermes scopes beyond the home are not read.** Hermes loads project skills from
 `<root>/.hermes/skills` and `<root>/.agents/skills` — but only when the repository root is on the
@@ -463,9 +462,6 @@ The panel is verified by hand in the app; there is no test harness for plugin UI
   because a skill filtered out as a command is indistinguishable from one that failed to load.
 - **Detail for reported entries.** The reduced detail screen has no body to show. If a provider ever
   reports a source path, the full `SkillDetail` takes it unchanged.
-- **Show shadowed copies.** Every entry already carries the directory it came from, so rendering
-  the losers of a name collision greyed out is a panel change, not a discovery change. It matches
-  Codex, which does not merge same-named skills.
 - **Read `~/.codex/config.toml`.** Its `[[skills.config]]` entries are how Codex disables a skill
   without deleting it — the one piece of state `enabled` carries that a directory scan misses.
 - **Open on host.** An RPC spawning `code -g <path>` on the daemon machine would make the mobile
