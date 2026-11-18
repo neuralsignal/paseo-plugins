@@ -3,9 +3,15 @@
 Notable changes to `skills`. The other plugins in this repository version separately.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the version numbers
-follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Every version is published to npm
-as `@gpambrozio/paseo-skills` and tagged here, so a version is something to install and a line to
-read before you move.
+follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Upstream publishes
+`@gpambrozio/paseo-skills` to npm. This fork is updated from Git.
+
+## [0.5.0] — 2026-11-18
+
+### Added
+
+- The Skills tab shows the source scope of the selected skill. Expand **Other copies** to see
+  the other discovered locations for the same name. Symlinks to the same file count once.
 
 ## [0.4.0] — 2026-10-01
 

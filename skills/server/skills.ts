@@ -10,7 +10,7 @@ import { resolveCodexSkills } from "./resolve/codex";
 import { resolveHermesSkills } from "./resolve/hermes";
 import { selectReported, supportsCommands } from "./resolve/reported";
 import type { ReportedSkill } from "./resolve/reported";
-import type { SkillEntry } from "./resolve/skill-entry";
+import type { OnShadowedSkill, SkillEntry } from "./resolve/skill-entry";
 
 export interface SkillRoots {
   claudeHome: string;
@@ -96,20 +96,27 @@ async function loadReportedSkills(
   }
 }
 
-async function resolveForAgent(agent: ResolvedAgent, roots: SkillRoots): Promise<SkillEntry[]> {
+async function resolveForAgent(
+  agent: ResolvedAgent,
+  roots: SkillRoots,
+  onShadowed?: OnShadowedSkill,
+): Promise<SkillEntry[]> {
   if (agent.provider === "claude") {
-    return resolveClaudeSkills({ cwd: agent.cwd, claudeHome: roots.claudeHome });
+    return resolveClaudeSkills({ cwd: agent.cwd, claudeHome: roots.claudeHome }, onShadowed);
   }
   if (agent.provider === "codex") {
-    return resolveCodexSkills({
-      cwd: agent.cwd,
-      codexHome: roots.codexHome,
-      agentsHome: roots.agentsHome,
-      adminSkillsDir: roots.adminSkillsDir,
-    });
+    return resolveCodexSkills(
+      {
+        cwd: agent.cwd,
+        codexHome: roots.codexHome,
+        agentsHome: roots.agentsHome,
+        adminSkillsDir: roots.adminSkillsDir,
+      },
+      onShadowed,
+    );
   }
   if (agent.provider === "hermes") {
-    return resolveHermesSkills({ hermesHome: roots.hermesHome });
+    return resolveHermesSkills({ hermesHome: roots.hermesHome }, onShadowed);
   }
   return [];
 }
@@ -143,18 +150,38 @@ export function createListSkillsHandler(roots: SkillRoots = defaultSkillRoots())
 export function createReadSkillHandler(roots: SkillRoots = defaultSkillRoots()) {
   return async (input: { agentId: string; skillId: string }, context: PluginHandlerContext) => {
     const agent = await loadAgent(input.agentId, context);
-    const skills = await resolveForAgent(agent, roots);
+    const shadowed: SkillEntry[] = [];
+    const skills = await resolveForAgent(agent, roots, (winner, copy) => {
+      if (winner.id === input.skillId) shadowed.push(copy);
+    });
     const skill = skills.find((entry) => entry.id === input.skillId);
     if (!skill) {
       throw new Error(`Skill not available: ${input.skillId}`);
     }
     const resolvedPath = await realpath(skill.path);
-    const raw = await readFile(resolvedPath, "utf8");
+    const [raw, resolvedCopies] = await Promise.all([
+      readFile(resolvedPath, "utf8"),
+      Promise.all(
+        shadowed.map(async ({ path, source }) => ({
+          path,
+          source,
+          canonicalPath: await realpath(path).catch(() => null),
+        })),
+      ),
+    ]);
+    const seen = new Set([resolvedPath]);
+    const otherCopies = resolvedCopies.flatMap(({ path, source, canonicalPath }) => {
+      if (!canonicalPath || seen.has(canonicalPath)) return [];
+      seen.add(canonicalPath);
+      return [{ path, source }];
+    });
     return {
       name: skill.name,
       description: skill.description,
+      source: skill.source,
       path: skill.path,
       resolvedPath,
+      otherCopies,
       body: parseFrontmatter(raw).body,
     };
   };

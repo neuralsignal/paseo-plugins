@@ -283,9 +283,58 @@ describe("createReadSkillHandler", () => {
 
     expect(result.name).toBe("catchup");
     expect(result.description).toBe("Summarizes changes");
+    expect(result.source.kind).toBe("project");
     expect(result.path).toBe(path.join(cwd, ".claude", "skills", "catchup", "SKILL.md"));
     expect(result.resolvedPath).toBe(result.path);
     expect(result.body).toBe("Body for catchup.\n");
+    expect(result.otherCopies).toEqual([]);
+  });
+
+  test.each([
+    ["claude", ".claude", "claudeHome"],
+    ["codex", ".agents", "agentsHome"],
+  ] as const)("keeps the %s winner and reports distinct copies in precedence order", async (
+    provider,
+    directory,
+    home,
+  ) => {
+    const repo = path.join(root, "repo");
+    const cwd = path.join(repo, "work");
+    const projectDir = path.join(cwd, directory, "skills");
+    const repoDir = path.join(repo, directory, "skills");
+    const personalDir = path.join(roots[home], "skills");
+    await mkdir(path.join(repo, ".git"), { recursive: true });
+    await Promise.all([
+      writeSkill(projectDir, "catchup", "Project copy"),
+      writeSkill(repoDir, "catchup", "Repository copy"),
+      writeSkill(personalDir, "catchup", "Personal copy"),
+    ]);
+    const context = contextFor(
+      { id: "agent-1", provider, cwd },
+      reports({ name: "catchup", kind: "skill" }, { name: "builtin", kind: "skill" }),
+    );
+    const listed = await createListSkillsHandler(roots)({ agentId: "agent-1" }, context);
+    expect(listed.skills).toHaveLength(1);
+    const skill = listed.skills[0]!;
+    expect(skill).toMatchObject({ description: "Project copy", status: "discovered" });
+    expect(listed.reported.skills.map((entry) => entry.name)).toEqual(["builtin"]);
+
+    const detail = await createReadSkillHandler(roots)(
+      { agentId: "agent-1", skillId: skill.id },
+      context,
+    );
+    expect(detail.path).toBe(skill.path);
+    expect(detail.source).toEqual(skill.source);
+    expect(detail.otherCopies).toEqual([
+      {
+        path: path.join(repoDir, "catchup", "SKILL.md"),
+        source: { kind: "repo", label: "Repository", dir: repoDir },
+      },
+      {
+        path: path.join(personalDir, "catchup", "SKILL.md"),
+        source: { kind: "personal", label: "Personal", dir: personalDir },
+      },
+    ]);
   });
 
   test("preserves the discovery path and reports the source of a linked skill", async () => {
@@ -296,6 +345,9 @@ describe("createReadSkillHandler", () => {
     await writeSkill(sharedDir, "catchup", "Summarizes changes");
     await mkdir(discoveredDir, { recursive: true });
     await symlink(path.join(sharedDir, "catchup"), path.join(discoveredDir, "catchup"), "dir");
+    const personalDir = path.join(roots.claudeHome, "skills");
+    await mkdir(personalDir, { recursive: true });
+    await symlink(path.join(sharedDir, "catchup"), path.join(personalDir, "catchup"), "dir");
     const context = contextFor({ id: "agent-1", provider: "claude", cwd });
     const listed = await createListSkillsHandler(roots)({ agentId: "agent-1" }, context);
     const skill = listed.skills[0]!;
@@ -309,6 +361,7 @@ describe("createReadSkillHandler", () => {
     expect(result.path).toBe(skill.path);
     expect(result.resolvedPath).toBe(path.join(sharedDir, "catchup", "SKILL.md"));
     expect(result.body).toBe("Body for catchup.\n");
+    expect(result.otherCopies).toEqual([]);
   });
 
   test("throws for a skill id discovery does not return", async () => {

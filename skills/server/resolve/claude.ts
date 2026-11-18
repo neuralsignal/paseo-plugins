@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { dirsUpToRepoRoot } from "./repo-root";
 import { readSkillCandidates, type SkillDirectoryCandidate } from "./skill-directory";
-import type { SkillEntry } from "./skill-entry";
+import type { OnShadowedSkill, SkillEntry } from "./skill-entry";
 
 export interface ClaudeResolveOptions {
   cwd: string;
@@ -71,7 +71,10 @@ async function readInstalledPluginDirs(
  * skills checked in at the repo root. Plugin skills are namespaced
  * `plugin:skill`, so in practice they never collide with the rest.
  */
-export async function resolveClaudeSkills(options: ClaudeResolveOptions): Promise<SkillEntry[]> {
+export async function resolveClaudeSkills(
+  options: ClaudeResolveOptions,
+  onShadowed?: OnShadowedSkill,
+): Promise<SkillEntry[]> {
   const [pluginDirs, dirs] = await Promise.all([
     readInstalledPluginDirs(options.claudeHome, options.cwd),
     dirsUpToRepoRoot(options.cwd),
@@ -97,5 +100,5 @@ export async function resolveClaudeSkills(options: ClaudeResolveOptions): Promis
     });
   }
 
-  return readSkillCandidates(candidates);
+  return readSkillCandidates(candidates, onShadowed);
 }

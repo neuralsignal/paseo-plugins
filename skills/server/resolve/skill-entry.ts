@@ -21,6 +21,8 @@ export interface SkillEntry {
   status: "discovered";
 }
 
+export type OnShadowedSkill = (winner: SkillEntry, copy: SkillEntry) => void;
+
 export function makeSkillId(kind: SkillSourceKind, dir: string, name: string): string {
   return `${kind}:${dir}:${name}`;
 }
@@ -30,10 +32,12 @@ export function makeSkillId(kind: SkillSourceKind, dir: string, name: string): s
  * skill shadows a personal one of the same name without either being reported
  * twice.
  */
-export function dedupeByName(entries: SkillEntry[]): SkillEntry[] {
+export function dedupeByName(entries: SkillEntry[], onShadowed?: OnShadowedSkill): SkillEntry[] {
   const byName = new Map<string, SkillEntry>();
   for (const entry of entries) {
-    if (!byName.has(entry.name)) byName.set(entry.name, entry);
+    const winner = byName.get(entry.name);
+    if (winner) onShadowed?.(winner, entry);
+    else byName.set(entry.name, entry);
   }
   return [...byName.values()];
 }

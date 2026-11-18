@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { dirsUpToRepoRoot } from "./repo-root";
 import { readSkillCandidates, type SkillDirectoryCandidate } from "./skill-directory";
-import type { SkillEntry } from "./skill-entry";
+import type { OnShadowedSkill, SkillEntry } from "./skill-entry";
 
 export interface CodexResolveOptions {
   cwd: string;
@@ -28,7 +28,10 @@ export interface CodexResolveOptions {
  *
  * Codex's bundled system skills have no path on disk and stay invisible here.
  */
-export async function resolveCodexSkills(options: CodexResolveOptions): Promise<SkillEntry[]> {
+export async function resolveCodexSkills(
+  options: CodexResolveOptions,
+  onShadowed?: OnShadowedSkill,
+): Promise<SkillEntry[]> {
   const dirs = await dirsUpToRepoRoot(options.cwd);
 
   const candidates: SkillDirectoryCandidate[] = dirs.flatMap((dir, index) => {
@@ -48,5 +51,5 @@ export async function resolveCodexSkills(options: CodexResolveOptions): Promise<
     { dir: options.adminSkillsDir, kind: "admin", label: "Admin" },
   );
 
-  return readSkillCandidates(candidates);
+  return readSkillCandidates(candidates, onShadowed);
 }
