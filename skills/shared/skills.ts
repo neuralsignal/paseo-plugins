@@ -62,6 +62,7 @@ export const readSkill = defineRpc({
     name: z.string(),
     description: z.string(),
     path: z.string(),
+    resolvedPath: z.string(),
     body: z.string(),
   }),
 });

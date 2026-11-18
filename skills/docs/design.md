@@ -219,7 +219,7 @@ export const readSkill = defineRpc({
   input: z.object({ agentId: z.string(), skillId: z.string() }),
   output: z.object({
     name: z.string(), description: z.string(),
-    path: z.string(), body: z.string(),
+    path: z.string(), resolvedPath: z.string(), body: z.string(),
   }),
 });
 ```
@@ -371,8 +371,10 @@ button works, because a reported entry is by definition a command the session ac
 screens share one `useInvoke` hook, so the re-entrancy guard that stops a double tap sending twice
 lives in a single place.
 
-**Detail.** Pressing a row calls `skills.read` and shows the absolute path, the full body in a
-`ScrollView` as monospace text, an optional arguments field, and an **Invoke** button.
+**Detail.** Pressing a row calls `skills.read` and shows the discovery path, the full body in a
+`ScrollView` as monospace text, an optional arguments field, and an **Invoke** button. The full
+panel also shows the resolved source path when it differs from the discovery path. **Copy path**
+copies the discovery path.
 
 **Invoke** sends the invocation through the agent handle:
 
