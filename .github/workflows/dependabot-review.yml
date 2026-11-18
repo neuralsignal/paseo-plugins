@@ -1,0 +1,21 @@
+name: Review Dependabot updates
+
+on:
+  workflow_run:
+    workflows: ["Checks"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  review:
+    if: github.repository == 'neuralsignal/paseo-plugins' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login == 'dependabot[bot]'
+    uses: neuralsignal/agentic-engineering-kit/.github/workflows/dependabot-review.yml@06425d6e5704ee6958fc5d6f113e3ca56088f21d
+    with:
+      ci-workflow: checks.yml
+      required-jobs: '["Checks passed"]'
+    secrets:
+      claude-oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
